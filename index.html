@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aegis Match | AI-Powered Resume Screening & Parsing System</title>
+  <meta name="description" content="State-of-the-art client-side AI Resume Screening and Match Prediction platform.">
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- PDFJS library for client-side PDF parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <!-- Header with logo and tab routes -->
+    <header>
+      <div class="logo-container">
+        <div class="logo-icon">AG</div>
+        <div class="logo-text">
+          <h1>AEGIS MATCH</h1>
+          <p>AI Resume Screener & ATS Parser</p>
+        </div>
+      </div>
+      
+      <div class="nav-tabs">
+        <button id="tab-single-btn" class="tab-btn active">
+          <span>👤</span> Single Profile Match
+        </button>
+        <button id="tab-batch-btn" class="tab-btn">
+          <span>👥</span> Batch Screening Matrix
+        </button>
+      </div>
+    </header>
+
+    <!-- Analytics Dashboard Header -->
+    <section class="stats-row">
+      <div class="stat-card">
+        <div class="stat-icon">📈</div>
+        <div class="stat-info">
+          <h3 id="stat-processed">0</h3>
+          <p>Resumes Processed</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🎯</div>
+        <div class="stat-info">
+          <h3 id="stat-avg-score">0%</h3>
+          <p>Average Match Score</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🏆</div>
+        <div class="stat-info">
+          <h3 id="stat-top-role" style="font-size: 1.1rem; line-height: 1.4;">N/A</h3>
+          <p>Active Screening Profile</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Workspace Layout -->
+    <main class="grid-layout">
+      
+      <!-- Left Column: Target Job Criteria (Shared for both tabs) -->
+      <section class="panel">
+        <div class="panel-header">
+          <h3 class="panel-title">🎯 Target Job Profile</h3>
+        </div>
+        
+        <div class="job-selector-container">
+          <span class="label-text">Select Preset Template</span>
+          <div class="job-presets" id="job-presets">
+            <!-- Dynamically populated from JS -->
+          </div>
+        </div>
+
+        <form id="job-form" onsubmit="event.preventDefault();">
+          <div class="flex-row">
+            <div class="flex-col">
+              <label for="job-title" class="label-text">Job Title</label>
+              <input type="text" id="job-title" class="input-styled" required>
+            </div>
+            <div class="flex-col">
+              <label for="job-department" class="label-text">Department</label>
+              <input type="text" id="job-department" class="input-styled" required>
+            </div>
+          </div>
+
+          <div class="flex-row" style="margin-top: 16px;">
+            <div class="flex-col">
+              <label for="job-experience" class="label-text">Required Experience (Years)</label>
+              <input type="number" id="job-experience" class="input-styled" min="0" max="30" required>
+            </div>
+          </div>
+
+          <div style="margin-top: 16px;">
+            <label for="job-skills" class="label-text">Required Skills (Comma separated)</label>
+            <input type="text" id="job-skills" class="input-styled" placeholder="e.g. React, Python, SQL">
+          </div>
+
+          <div style="margin-top: 16px;">
+            <label for="job-keywords" class="label-text">Preferred Keywords / Concepts</label>
+            <input type="text" id="job-keywords" class="input-styled" placeholder="e.g. CI/CD, Agile, performance optimization">
+          </div>
+
+          <div style="margin-top: 16px;">
+            <label for="job-desc" class="label-text">Full Description</label>
+            <textarea id="job-desc" class="textarea-styled" style="height: 120px;" placeholder="Paste complete job description details..."></textarea>
+          </div>
+        </form>
+      </section>
+
+      <!-- Right Column: Single Resume Screener -->
+      <section id="single-screener-view" class="results-container">
+        
+        <div class="panel">
+          <div class="panel-header">
+            <h3 class="panel-title">📄 Upload Resume</h3>
+            <div style="display: flex; gap: 8px;">
+              <button id="load-sample-perfect" class="sample-load-btn">🏆 Perfect Fit</button>
+              <button id="load-sample-partial" class="sample-load-btn">⚖️ Partial Fit</button>
+              <button id="load-sample-unrelated" class="sample-load-btn">❌ Low Fit</button>
+            </div>
+          </div>
+
+          <!-- Drag and drop zone -->
+          <div class="dropzone" id="single-dropzone">
+            <div class="dropzone-icon">📤</div>
+            <div class="dropzone-text">
+              <h4>Drag & drop resume here</h4>
+              <p>Supports PDF or plain TXT files</p>
+            </div>
+            <input type="file" id="single-file-input" class="file-input" accept=".pdf,.txt">
+          </div>
+
+          <!-- Collapsible text box to view extracted content -->
+          <div style="margin-top: 20px;">
+            <label for="resume-text" class="label-text">Extracted Resume Content (Edits auto-saved)</label>
+            <textarea id="resume-text" class="textarea-styled" style="height: 140px;" placeholder="Text content will be parsed here automatically upon upload. You can also paste directly..."></textarea>
+          </div>
+
+          <div class="action-row" style="margin-top: 20px;">
+            <button id="scan-single-btn" class="action-btn">
+              ⚡ Parse & Match Resume
+            </button>
+          </div>
+        </div>
+
+        <!-- Single Match Results Pane -->
+        <div id="results-panel" class="panel">
+          <!-- Initially empty state, populated on analysis -->
+          <div class="empty-state">
+            <span class="empty-state-icon">📋</span>
+            <h3>Awaiting screening input</h3>
+            <p>Upload a candidate resume or click a fit preset to view ATS scorecard audits.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Batch Resume Screener -->
+      <section id="batch-screener-view" style="display: none;" class="batch-container">
+        
+        <div class="panel">
+          <div class="panel-header">
+            <h3 class="panel-title">👥 Multiple Candidate Uploads</h3>
+          </div>
+
+          <!-- Drag & drop zone for batch -->
+          <div class="batch-upload-box" id="batch-dropzone">
+            <div class="dropzone-icon" style="font-size: 3rem;">📥</div>
+            <h4 style="margin-top: 10px; font-size: 1.1rem;">Upload Multiple Resumes</h4>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 4px;">Drag and drop multiple PDF or TXT files at once to compare fit metrics.</p>
+            <input type="file" id="batch-file-input" class="file-input" accept=".pdf,.txt" multiple>
+          </div>
+
+          <!-- Queue list of uploaded files -->
+          <div class="uploaded-files-list" id="uploaded-files-list">
+            <div class="empty-state">
+              <span class="empty-state-icon">📂</span>
+              <h3>No files uploaded</h3>
+              <p>Drag and drop multiple resumes or click to browse files.</p>
+            </div>
+          </div>
+
+          <!-- Action buttons for batch -->
+          <div class="action-row" id="batch-action-row" style="display: none;">
+            <button id="batch-clear-btn" class="sample-load-btn" style="padding: 12px 24px;">Clear Queue</button>
+            <button id="batch-run-btn" class="action-btn">🚀 Screen Candidate Batch</button>
+          </div>
+        </div>
+
+        <!-- Table ranking comparisons -->
+        <div id="batch-comparison-view">
+          <!-- Populated from JavaScript -->
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Candidate Details Modal Overlay -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal-content">
+      <div style="display: flex; justify-content: flex-end;">
+        <button class="modal-close" id="modal-close-btn">✕</button>
+      </div>
+      <div id="modal-details-body">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Run main application -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>

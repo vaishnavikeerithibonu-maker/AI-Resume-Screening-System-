@@ -1,0 +1,11 @@
+{
+  "name": "ai-resume-screening-system",
+  "version": "1.0.0",
+  "description": "An AI-powered client-side web application that analyzes resumes and predicts job matching scores.",
+  "type": "module",
+  "scripts": {
+    "test": "node verify_analyzer.js"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
